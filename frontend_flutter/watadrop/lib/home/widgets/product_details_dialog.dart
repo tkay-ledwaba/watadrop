@@ -49,7 +49,7 @@ ProductDetailsDialog(context, product,_refreshData) {
                       Row(
                         children:[
                           Text(product.name, textAlign: TextAlign.left,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize:18),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize:14),
                           ),
                         ],
                       ),
@@ -177,8 +177,12 @@ ProductDetailsDialog(context, product,_refreshData) {
                                   readOnly: true,
                                   controller: totalController,
                                   decoration: InputDecoration(
+                                    prefix: Text("R",
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize:18),
+                                    ),
                                     border: InputBorder.none,
                                   ),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize:18),
                                 ),
                               ),
                               ElevatedButton(

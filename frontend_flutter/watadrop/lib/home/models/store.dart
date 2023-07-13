@@ -7,7 +7,7 @@ class Store{
   String address;
   String phone;
   String email;
-  String distance;
+  String? distance;
 
   Store({
     required this.id,

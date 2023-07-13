@@ -44,21 +44,19 @@ Future<String> getCurrentAddress() async {
 
 Future<String> getAddress(latitude, longitude) async {
 
-  return Future.delayed(Duration(seconds: 2), () async {
-    List<Placemark> newPlace = await placemarkFromCoordinates(latitude!, longitude!);
 
-    Placemark? placeMark  = newPlace[0];
-    String? street = placeMark.street;
-    String? sublocality = placeMark.subLocality;
-    String? locality = placeMark.locality;
-    String? administrativeArea = placeMark.administrativeArea;
-    String? postalCode = placeMark.postalCode;
-    String? country = placeMark.country;
-    String? address = "${street}, ${sublocality}, ${locality}, ${administrativeArea}, ${postalCode}, ${country}";
+  List<Placemark> newPlace = await placemarkFromCoordinates(latitude!, longitude!);
 
-    return address;
+  Placemark? placeMark  = newPlace[0];
+  String? street = placeMark.street;
+  String? sublocality = placeMark.subLocality;
+  String? locality = placeMark.locality;
+  String? administrativeArea = placeMark.administrativeArea;
+  String? postalCode = placeMark.postalCode;
+  String? country = placeMark.country;
+  String? address = "${street}, ${sublocality}, ${locality}, ${administrativeArea}, ${postalCode}, ${country}";
 
-  });
+  return address;
 }
 
 // Get distance between current location and entered address

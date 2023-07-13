@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
-import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:watadrop/cart/models/cart.dart';
 import 'package:watadrop/cart/widgets/card_widget.dart';
 
 import 'package:watadrop/common/style.dart';
-
-
+import 'package:http/http.dart' as http;
 import '../../common/strings.dart';
 import '../../config/location_permissions.dart';
+import '../../home/models/store.dart';
 import '../../home/views/home_screen.dart';
 import '../../widgets/toast_widget.dart';
 
@@ -17,7 +16,7 @@ final cartScaffoldKey = GlobalKey<ScaffoldState>();
 
 class CartScreen extends StatefulWidget {
 
-  final String store_address;
+  final Store store_address;
   final String delivery_address;
 
   const CartScreen({super.key, required this.store_address, required this.delivery_address});
@@ -189,9 +188,13 @@ class _CartScreenState extends State<CartScreen> {
               ElevatedButton(
                   onPressed: () async {
 
-                    if (_controller.text.isNotEmpty){
+                    if (widget.delivery_address
+                        .isNotEmpty){
                       String? cart_message="";
                       var order_id = DateTime.now().millisecondsSinceEpoch.toString();
+
+                      var amount = int.parse((total_price+delivery_price).toStringAsFixed(0))*100;
+                      print(amount);
 
                       Charge charge = Charge()
                         ..amount = int.parse((total_price+delivery_price).toStringAsFixed(0))*100
@@ -210,9 +213,15 @@ class _CartScreenState extends State<CartScreen> {
                           if (myData[a].name.toString().isNotEmpty){
                             cart_message = "$cart_message\n${myData[a].qty.toString()} ${myData[a].name.toString()}";
                           }
-
                         }
 
+                        placeOrder(context,
+                          current_user!.id,
+                          widget.store_address.id,
+                          amount,
+                          widget.delivery_address,
+                          cart_message!,
+                        );
 
 
                         for (int a = 0; a < count; a++){
@@ -270,6 +279,43 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
+  void placeOrder(
+      BuildContext context,
+      int customer_id,
+      int store_id,
+      int price,
+      String address,
+      String cart,
+      ) async {
+
+    try{
+      final response_data = await http
+          .post(Uri.parse(orderUrl),
+        body: {
+          'customer': customer_id,
+          'store': store_id,
+          'price': price,
+          'address': address,
+          'cart': cart,
+        },
+      );
+
+      print(response_data.statusCode);
+
+      if (response_data.statusCode == 200){
+        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(
+            builder: (context) => HomeScreen()), (Route route) => false);
+      } else {
+        Navigator.pop(context);
+        showToastWidget(response_data.body.toString(), colorFailed);
+      }
+
+    } catch (e){
+      Navigator.pop(context);
+      showToastWidget(e.toString(), colorFailed);
+    }
+
+  }
 
 }
 

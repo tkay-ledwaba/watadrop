@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 import 'package:badges/badges.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +24,7 @@ import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/progress_widget.dart';
 import '../models/store.dart';
 import '../widgets/product_widget.dart';
+import 'drawer.dart';
 
 final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -80,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _active = 0;
 
   var store_address;
+  late Store store_selected;
 
   TextEditingController storeController = TextEditingController();
   TextEditingController addressController = TextEditingController();
@@ -88,8 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late SharedPreferences prefs;
 
   Future<User?> getUser() async {
-
-    User? current_user;
 
     prefs = await SharedPreferences.getInstance();
     //Return String
@@ -134,96 +135,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<List<Store>> getStores() async {
 
-    return Future.delayed(Duration(seconds: 2), () async {
-      final response = await http
-          .get(Uri.parse(storesUrl)
-      );
+    print("delivery address: "+addressController.text);
 
-      if (response.statusCode == 200) {
-        // If the server did return a 200 OK response,
-        // then parse the JSON.
+    final response = await http
+        .get(Uri.parse(storesUrl)
+    );
 
-        var responseData = json.decode(response.body);
-
-        for (var singleCollection in responseData){
-          print(singleCollection['address']!.toString());
-          print(addressController.text!);
-
-          var distance;
-
-          Future<String> distanceFuture =  getDistance(singleCollection['address']!.toString(), addressController.text!);
-          distance = await distanceFuture;
-
-          if (distance == null){
-            // Call the future String using await function that returns String.
-            Future<String> distanceFuture =  getDistance(singleCollection['address']!.toString(), addressController.text!);
-            distance = await distanceFuture;
-
-          }
-
-          print(distance!);
-          Store collection = Store(
-            id: singleCollection['id'],
-            name: singleCollection['name'],
-            address: singleCollection['address'],
-            phone: singleCollection['phone'],
-            email: singleCollection['email'],
-            distance: distance,
-          );
-
-          stores.add(collection);
-
-          //stores.sort((a, b) => b.distance.compareTo(a.distance));
+    if (response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      // then parse the JSON.
 
 
 
-        }
+      var responseData = json.decode(response.body);
+      for (var data in responseData){
+        print('store_address'+data['address']!);
+        Future<String> distanceFuture =  getDistance(data['address']!.toString(), addressController.text!);
+        String distance = await distanceFuture;
 
-        if (mounted){
-          if (stores.isNotEmpty){
-            setState(() {
-              storeController.text = selected_store = '${stores[0].name} (${stores[0].distance}km)';
-              isLoading = false;
-              print(storeController.text);
-              store_address = stores[0].address;
-            });
-          }
-        }
+        print(distance);
 
-        return stores;
-      } else {
-        // If the server did not return a 200 OK response,
-        // then throw an exception.
-        throw Exception('Failed to load store');
+        Store store = Store(
+            id: data['id'],
+            name: data['name'],
+            address: data['address'],
+            phone: data['phone'],
+            email: data['email'],
+            distance: distance
+        );
+        stores.add(store);
       }
 
-    });
+
+
+      return stores;
+    } else {
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception('Failed to load store');
+    }
 
   }
 
-  getCurrentLocation(){
-    getCurrentAddress().then((value){
-      addressController.text = address = value;
-      print(addressController.text);
-      if (addressController.text != null){
-        //getStores();
 
-
-      } else {
-        getCurrentLocation();
-      }
-    });
-
-
-  }
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getUser();
-    getCurrentLocation();
-
 
     if (storeController.text != null ){
       getProducts(_active);
@@ -308,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final data = await databaseHelper.getCartList();
     setState(() {
       cartList = data;
-      //isLoading = false;
+      isLoading = false;
       count = cartList.length;
     });
   }
@@ -318,6 +278,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
+
+    if (mounted){
+      if (stores.isNotEmpty){
+        setState(() {
+          storeController.text = stores[0].name;
+        });
+      }
+    }
 
     if (cartList == null) {
       cartList = <Cart>[];
@@ -344,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final user_data = snapshot.data!;
               print(user_data.email);
 
-              return (isLoading)?showProgressWidget(context):Scaffold(
+              return Scaffold(
                 backgroundColor: colorPrimary,
                 appBar: AppBar(
                   elevation: 0,
@@ -371,8 +339,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               showToastWidget( "Your cart is empty, please add something.", colorSecondary);
                             }else {
                               Navigator.of(context).push(MaterialPageRoute(builder: (context)=>CartScreen(
-                                store_address: store_address!,
-                                delivery_address: addressController.text
+                                  store_address: store_selected,
+                                  delivery_address: addressController.text
                               )));
                             }
                           },
@@ -391,79 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                drawer: Container(
-                  width: width * 0.5,
-                  child: Drawer(
-                    backgroundColor: colorPrimary,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 48,
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('${user_data!.first_name.toString()} ${user_data!.last_name.toString()}'.toUpperCase(),
-                              style: TextStyle(
-                                  color: colorSecondary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18
-                              )
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text("Edit Profile",
-                            style: TextStyle(
-                                color: colorAccent,
-                                fontSize: 10
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 16,
-                        ),
-                        Divider(
-                          height: 2,
-                          color: colorSecondary,
-                        ),
-                        ListTile(
-                          leading: Icon(Icons.chat, color: colorSecondary),
-                          title: Text("Chats",
-                              style: TextStyle(
-                                  color: colorSecondary
-                              )
-                          ),
-                        ),
-                        ListTile(
-                          leading: Icon(Icons.help_center, color: colorSecondary),
-                          title: Text("Help",
-                              style: TextStyle(
-                                  color: colorSecondary
-                              )),
-                        ),
-                        ListTile(
-                          leading: Icon(Icons.settings, color: colorSecondary),
-                          title: Text("Settings",
-                              style: TextStyle(
-                                  color: colorSecondary
-                              )
-                          ),
-                        ),
-                        ListTile(
-                          leading: Icon(Icons.info, color: colorSecondary),
-                          title: Text("About",
-                              style: TextStyle(
-                                  color: colorSecondary
-                              )),
-                        ),
-
-
-                      ],
-                    ),
-                  ),
-                ),
+                drawer: DrawerWidget(context, user_data),
                 body: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -472,62 +368,83 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         const SizedBox(height: 4),
                         FutureBuilder(
-                          future: getStores(),
-                            builder: (ctx, storeSnapshot){
-                          if (selected_store == null){
-                            if (storeSnapshot.hasData){
-                              final store_data = storeSnapshot.data!;
-                              print(store_data);
+                          future: getCurrentAddress(),
+                          builder: (_context, addressSnapshot){
+                            if (addressController.text.isEmpty){
+                              if (addressSnapshot.hasData){
+                                final current_address_data = addressSnapshot.data!;
+                                print(current_address_data);
+                                addressController.text = current_address_data;
+
+                                return Column(
+                                  children: [
+                                    TextField(
+                                      readOnly: true,
+                                      controller: addressController,
+                                      onChanged: (value) {
+                                        address = value.trim();
+                                      },
+                                      maxLines: 2,
+                                      cursorColor: colorAccent,
+                                      textInputAction: TextInputAction.next,
+                                      decoration: InputDecoration(
+                                          border: OutlineInputBorder(
+                                              borderRadius: border_radius
+                                          ),
+                                          hintText: "Please set address",
+                                          labelText: 'Delivery Address',
+                                          isDense: true,
+                                          // Added this
+                                          contentPadding: const EdgeInsets.all(8)),
+                                      onTap: (){
+                                        // Search Address
+
+                                        //showAddressPickerDialog(context, addressController);
+                                      },
+                                    ),
+                                    const SizedBox(height: 4),
+                                    FutureBuilder(
+                                        future: getStores(),
+                                        builder: (ctx, storeSnapshot){
+                                          if (storeSnapshot.hasData){
+                                            final store_data = storeSnapshot.data!;
+                                            print('data_store: '+ store_data[0].name.toString());
+                                            store_selected = stores[0];
+                                            storeController.text = '${stores[0].name} (${stores[0].distance}km)';
+                                          }
+
+                                          return TextField(
+                                            readOnly: true,
+                                            controller: storeController,
+                                            onChanged: (value) {
+                                              selected_store = value.trim();
+                                            },
+                                            cursorColor: colorAccent,
+                                            textInputAction: TextInputAction.next,
+                                            decoration: InputDecoration(
+                                                border: OutlineInputBorder(
+                                                    borderRadius: border_radius
+                                                ),
+                                                hintText: "Please select store",
+                                                labelText: 'Store',
+                                                isDense: true,
+                                                // Added this
+                                                contentPadding: const EdgeInsets.all(8)),
+                                            onTap: (){
+
+                                            },
+                                          );
+                                        })
+                                  ],
+                                );
+                              }
                             }
-                          }
-                          return TextField(
-                            readOnly: true,
-                            controller: storeController,
-                            onChanged: (value) {
-                              selected_store = value.trim();
-                            },
-                            cursorColor: colorAccent,
-                            textInputAction: TextInputAction.next,
-                            decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                    borderRadius: border_radius
-                                ),
-                                hintText: "Please select store",
-                                labelText: 'Store',
-                                isDense: true,
-                                // Added this
-                                contentPadding: const EdgeInsets.all(8)),
-                            onTap: (){
-
-                            },
-                          );
-                        }),
-
-                        const SizedBox(height: 4),
-                        TextField(
-                          readOnly: true,
-                          controller: addressController,
-                          onChanged: (value) {
-                            address = value.trim();
-                          },
-                          maxLines: 2,
-                          cursorColor: colorAccent,
-                          textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                  borderRadius: border_radius
-                              ),
-                              hintText: "Please set address",
-                              labelText: 'Delivery Address',
-                              isDense: true,
-                              // Added this
-                              contentPadding: const EdgeInsets.all(8)),
-                          onTap: (){
-                            // Search Address
-
-                            //showAddressPickerDialog(context, addressController);
+                            return showProgressWidget(context);
                           },
                         ),
+
+
+
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 32,
