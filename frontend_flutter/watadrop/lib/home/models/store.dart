@@ -7,6 +7,7 @@ class Store{
   String address;
   String phone;
   String email;
+  String distance;
 
   Store({
     required this.id,
@@ -14,6 +15,7 @@ class Store{
     required this.address,
     required this.phone,
     required this.email,
+    required this.distance,
   });
 
   Store copyWith({
@@ -22,6 +24,7 @@ class Store{
     String? address,
     String? phone,
     String? email,
+    String? distance,
   }){
     return Store(
         id: id ?? this.id,
@@ -29,6 +32,7 @@ class Store{
         address: address ?? this.address,
         phone: phone ?? this.phone,
         email: email ?? this.email,
+        distance: distance ?? this.distance,
     );
   }
 
@@ -39,6 +43,7 @@ class Store{
       'address': address,
       'phone': phone,
       'email': email,
+      'distance': distance,
     };
   }
 
@@ -49,6 +54,7 @@ class Store{
       address: map['address'],
       phone: map['phone'],
       email: map['email'],
+      distance: map['distance'],
     );
   }
 

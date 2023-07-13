@@ -188,6 +188,7 @@ void showSignupForm(context) {
 
                                         SharedPreferences prefs = await SharedPreferences.getInstance();
                                         prefs.setString('token', current_token);
+                                        prefs.setString('email', email);
 
                                         setAccount(context, first_name, last_name, email);
 

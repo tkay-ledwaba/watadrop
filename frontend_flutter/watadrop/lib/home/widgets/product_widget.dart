@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:watadrop/home/widgets/product_details_dialog.dart';
 
 import '../../common/style.dart';
 
-Widget ProductWidget(product){
+
+Widget ProductWidget(context, product, _refreshData){
 
   String display_name = "${product.name} (${product.volume}ml x ${product.qty})";
 
@@ -15,7 +17,7 @@ Widget ProductWidget(product){
     }
   }
 
-  if (product.category_id == 1){
+  if (product.menu_id == 2){
     display_name = display_name+" (Refill)";
   }
 
@@ -40,7 +42,7 @@ Widget ProductWidget(product){
             ),
             Padding(
                 padding: EdgeInsets.only(left: 4, top: 8),
-                child: Text(' $display_name',
+                child: Text('$display_name',
                     textAlign: TextAlign.left,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -75,9 +77,7 @@ Widget ProductWidget(product){
                       minimumSize: Size(20, 25), //////// HERE
                     ),
                     onPressed: () async {
-
-
-
+                      ProductDetailsDialog(context, product,_refreshData);
                     },
                     child: Text('Add'),
                   )
@@ -88,7 +88,7 @@ Widget ProductWidget(product){
         ),
         onTap: (){
 
-
+          ProductDetailsDialog(context, product,_refreshData);
         },
       )
   );

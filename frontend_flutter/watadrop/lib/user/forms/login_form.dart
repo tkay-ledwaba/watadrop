@@ -143,7 +143,7 @@ void showLoginForm(context) {
 
                                         SharedPreferences prefs = await SharedPreferences.getInstance();
                                         prefs.setString('token', token.token);
-
+                                        prefs.setString('email', email);
                                         current_email = email;
 
                                         Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(

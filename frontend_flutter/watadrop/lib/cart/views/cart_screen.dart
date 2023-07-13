@@ -1,62 +1,279 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_paystack/flutter_paystack.dart';
+import 'package:intl/intl.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:watadrop/cart/models/cart.dart';
+import 'package:watadrop/cart/widgets/card_widget.dart';
 
-import '../../common/style.dart';
+import 'package:watadrop/common/style.dart';
 
 
-class CartScreen extends StatefulWidget{
+import '../../common/strings.dart';
+import '../../config/location_permissions.dart';
+import '../../home/views/home_screen.dart';
+import '../../widgets/toast_widget.dart';
+
+final cartScaffoldKey = GlobalKey<ScaffoldState>();
+
+class CartScreen extends StatefulWidget {
+
+  final String store_address;
+  final String delivery_address;
+
+  const CartScreen({super.key, required this.store_address, required this.delivery_address});
+
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  _CartScreenState createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen>{
+class _CartScreenState extends State<CartScreen> {
 
-  TextEditingController addressController = TextEditingController();
-  String? address;
+
+  List<Cart> myData = <Cart>[];
+  double total_price = 0.00;
+  double delivery_price = 20.00;
+
+  bool _isLoading = true;
+
+  final _controller = TextEditingController();
+
+  final plugin = PaystackPlugin();
+
+  // This function is used to fetch all data from the database
+  void _refreshData() async {
+    final data = await databaseHelper.getCartList();
+    setState(() {
+      myData = data;
+      _isLoading = false;
+      count = myData.length;
+      if (count > 0){
+        for (int x = 0; x < count; x++){
+          total_price = total_price + double.parse(myData[x].price) + delivery_price;
+        }
+      }
+    });
+  }
 
   @override
-  Widget build(BuildContext context){
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _refreshData();
+
+    plugin.initialize(
+        publicKey: paystack_public_key);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    //_getCurrentPosition();
+    super.dispose();
+  }
+
+   calculate_delivery_price(store_address, delivery_address) async {
+    Future<String> distanceFuture =  getDistance(store_address!, delivery_address!);
+    var distance = await distanceFuture;
+
+    if (distance != null){
+      if (double.parse(distance) < 1){
+        setState(() {
+          delivery_price = 20.00;
+        });
+      } else {
+        setState(() {
+          delivery_price = delivery_price + (double.parse(distance) * 6);
+        });
+      }
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      //backgroundColor: colorPrimary,
+      backgroundColor: colorPrimary,
       appBar: AppBar(
-        elevation: 1,
-        backgroundColor: colorPrimary,
-        foregroundColor: colorSecondary,
-        title: SizedBox(
-          height: 42,
-          //width: 250,
-          child:Center(
-            child: TextField(
-              readOnly: true,
-              controller: addressController,
-              onChanged: (value) {
-                address = value.trim();
-              },
-              cursorColor: colorAccent,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: border_radius
+          backgroundColor: colorPrimary,
+          foregroundColor: colorSecondary,
+
+          //centerTitle: true,
+          title: Text("CART"),
+          elevation: 0,
+
+          actions: <Widget>[
+            Padding(
+                padding: const EdgeInsets.only(right: 16.0, top: 4),
+                child: GestureDetector(
+                  child: Icon(Icons.delete_forever, color: colorSecondary,),
+                  onTap: () {
+                    for (int a = 0; a < count; a++){
+                      Future<int> result = databaseHelper.deleteCart(myData[a].id);
+
+                      if (result != 0) {  // Success
+                        updateListView();
+                      }
+                    }
+                    count = cartList.length;
+                    showToastWidget('Cart has been cleared.', colorSuccess);
+                    updateListView();
+                    Navigator.pop(context);
+
+                  },
+                )
+            )
+          ]
+      ),
+      body: _isLoading
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : myData.isEmpty
+          ? const Center(child: Text("Your cart is empty. Please add something.", style: TextStyle(color: Colors.white, fontSize: 16),))
+          : ListView.builder(
+          itemCount: myData.length,
+          itemBuilder: (context, index) =>
+              SingleChildScrollView(
+                child: showCardWidget(myData, context, index, databaseHelper, updateListView),
+              )
+      ),
+      bottomSheet: BottomSheet(
+
+        builder: (context){
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Card(
+                shape: RoundedRectangleBorder( //<-- SEE HERE
+                  side: BorderSide(
+                    color: Colors.black,
                   ),
-                  hintText: "Please set address",
-                  labelText: 'Delivery Address',
-                  isDense: true,
-                  // Added this
-                  contentPadding: EdgeInsets.all(8)),
-              onTap: (){
-                
-              },
-            ),
-          )
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 16, left: 16),
-            child: Icon(Icons.delete_forever_outlined),
-          ),
-        ],
+                ),
+                child:  Padding(padding: EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 4,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            //Icon(Icons.location_pin, color: colorSecondary,),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text('Subtotal:'),
+                                Text('Delivery Fee:'),
+                                Text('Total:'),
+
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text('R ${total_price.toStringAsFixed(2)}'),
+                                Text('R ${delivery_price.toStringAsFixed(2)}'),
+                                Text('R ${total_price+delivery_price}0'),
+
+                              ],
+                            )
+
+                          ],
+                        )
+                      ],
+                    )
+                ),
+              ),
+              ElevatedButton(
+                  onPressed: () async {
+
+                    if (_controller.text.isNotEmpty){
+                      String? cart_message="";
+                      var order_id = DateTime.now().millisecondsSinceEpoch.toString();
+
+                      Charge charge = Charge()
+                        ..amount = int.parse((total_price+delivery_price).toStringAsFixed(0))*100
+                        ..reference = order_id
+                        ..currency = "ZAR"
+                      // or ..accessCode = _getAccessCodeFrmInitialization()
+                        ..email = current_email;
+                      CheckoutResponse response = await plugin.checkout(
+                        context ,
+                        method: CheckoutMethod.card, // Defaults to CheckoutMethod.selectable
+                        charge: charge,
+                      );
+
+                      if (response.status){
+                        for (int a = 0; a < count; a++){
+                          if (myData[a].name.toString().isNotEmpty){
+                            cart_message = "$cart_message\n${myData[a].qty.toString()} ${myData[a].name.toString()}";
+                          }
+
+                        }
+
+
+
+                        for (int a = 0; a < count; a++){
+                          Future<int> result = databaseHelper.deleteCart(myData[a].id);
+
+                          if (result != 0) {  // Success
+                            updateListView();
+                          }
+                        }
+
+                        showToastWidget("Order Placed Successfully", colorSuccess);
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder:(context) => HomeScreen())
+                        );
+                      } else {
+                        showToastWidget(response.message, colorFailed);
+                      }
+
+                    } else{
+                      showToastWidget("Please set address.", colorFailed);
+                    }
+
+                  },
+                  style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50), // NEW
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(0),
+                      ),backgroundColor: colorSuccess
+                  ),
+                  child: Text('CHECKOUT', style: TextStyle(color: Colors.white),)
+              ),
+            ],
+          );
+        }, onClosing: () {
+        Navigator.pop(context);
+      },
       ),
     );
   }
+
+  void gotoHomeScreen() {
+    Navigator.pop(context);
+  }
+  void updateListView() {
+
+    final Future<Database> dbFuture = databaseHelper.initializeDatabase();
+    dbFuture.then((database) {
+
+      Future<List<Cart>> noteListFuture = databaseHelper.getCartList();
+      noteListFuture.then((noteList) {
+        this.myData = noteList;
+        //count = noteList.length;
+      });
+    });
+  }
+
+
 }
+
+
+
+
+

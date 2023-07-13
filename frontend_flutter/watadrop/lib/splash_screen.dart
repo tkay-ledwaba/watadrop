@@ -21,7 +21,6 @@ class SplashScreen extends StatelessWidget {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           //Return String
           String? token = prefs.getString('token');
-
           if (token != null){
             return HomeScreen();
           } else {
