@@ -166,6 +166,7 @@ Future<List<Order>> getOrders() async {
           date: item['date'],
           reference: item['reference'],
           cart: item['cart'],
+          comment: (item['comment'] != null)?item['comment']:"",
           status: item['status']
       );
 

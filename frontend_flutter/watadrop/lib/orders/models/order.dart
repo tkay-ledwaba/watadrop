@@ -10,6 +10,7 @@ class Order{
   String date;
   String reference;
   String cart;
+  String comment;
   int status;
 
   Order({
@@ -21,6 +22,7 @@ class Order{
     required this.date,
     required this.reference,
     required this.cart,
+    required this.comment,
     required this.status,
   });
 
@@ -33,6 +35,7 @@ class Order{
     String? date,
     String? reference,
     String? cart,
+    String? comment,
     int? status,
   }){
     return Order(
@@ -44,6 +47,7 @@ class Order{
       date: date ?? this.date,
       reference: reference ?? this.reference,
       cart: cart ?? this.cart,
+      comment: comment ?? this.comment,
       status: status ?? this.status,
     );
   }
@@ -58,6 +62,7 @@ class Order{
       'date': date,
       'reference': reference,
       'cart': cart,
+      'comment': comment,
       'status': status,
     };
   }
@@ -72,6 +77,7 @@ class Order{
       date: map['date'],
       reference: map['reference'],
       cart: map['cart'],
+      comment: map['comment'],
       status: map['status'],
     );
   }

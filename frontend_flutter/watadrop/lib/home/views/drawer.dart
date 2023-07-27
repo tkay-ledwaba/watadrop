@@ -46,7 +46,7 @@ Widget DrawerWidget(context, user_data){
             ),
             onTap: (){
               Navigator.of(context).push(
-                  MaterialPageRoute(builder:(context)=>AccountScreen())
+                  MaterialPageRoute(builder:(context)=>AccountScreen(current_user:user_data))
               );
             },
           ),

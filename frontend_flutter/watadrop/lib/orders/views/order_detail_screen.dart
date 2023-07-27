@@ -17,14 +17,6 @@ class OrderDetailScreen extends StatefulWidget {
 
 class OrderDetailScreenState extends State<OrderDetailScreen> {
 
-  var status;
-  var address;
-  var datetime;
-  var amount;
-  var agent;
-  var agent_id;
-  var cart;
-
   late String message;
   late TextEditingController text_controller;
 
@@ -46,9 +38,11 @@ class OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: colorAccent,
+      //backgroundColor: colorAccent,
       // Appbar
       appBar: AppBar(
+        elevation: 0.5,
+        foregroundColor: colorSecondary,
         // Title
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colorSecondary,), onPressed: (){
@@ -56,18 +50,13 @@ class OrderDetailScreenState extends State<OrderDetailScreen> {
         },
         ),
         backgroundColor: colorPrimary,
-        title: Text('Order #${widget.order.reference}', style: TextStyle(color: colorPrimary),),
-        actions: [
-          IconButton(onPressed: (){
-
-          }, icon: Icon(Icons.cancel_outlined))
-        ],
+        title: Text('ORDER #${widget.order.reference}'),
       ),
       // Body
       body: Column(
         children: [
           Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Column(
                 // mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -80,42 +69,121 @@ class OrderDetailScreenState extends State<OrderDetailScreen> {
                       color: Colors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Column(
+                        child:  Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
+                            Text('ADDRESS:', style: TextStyle(fontWeight: FontWeight.bold),),
+                            Text('${widget.order.address}'),
+
+                            Divider(
+                              height: 1,
+                            ),
+                            SizedBox(
+                              height: 4,
+                            ),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  //crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Text('Address:'),
-                                    Text('Date:'),
-                                    Text('Paid:'),
-                                    Text('Driver:'),
-                                    Text('Cart:')
-                                  ],
-                                ),
-                                Column(
-                                  //crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text('$address'),
-                                    Text('$datetime'),
-                                    Text('$amount'),
-                                    Text('${agent}'),
-                                    Text('${cart.toString().replaceAll(", ", "\n")}')
-                                  ],
+                                Text('DATE:',style: TextStyle(fontWeight: FontWeight.bold),),
+                                Text('${widget.order.date}'),
+                              ],
+                            ),
+
+                            Divider(
+                              height: 1,
+                            ),
+                            SizedBox(
+                              height: 4,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('PAID:',style: TextStyle(fontWeight: FontWeight.bold),),
+                                Text('R${widget.order.price}.00'),
+                              ],
+                            ),
+
+                            Divider(
+                              height: 1,
+                            ),
+                            SizedBox(
+                              height: 4,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('DRIVER:' ,style: TextStyle(fontWeight: FontWeight.bold)),
+                                Text('Tevin P'),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Timeline(widget.order.status),
+                                Text(checkStatus(widget.order.status),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 12.0,
+                                      color: Colors.black,
+                                    )
                                 )
                               ],
                             ),
-                            Timeline(status),
-                            Text(checkStatus(status)),
 
+                            Divider(
+                              height: 1,
+                            ),
+                            SizedBox(
+                              height: 4,
+                            ),
+                            Text('BOUGHT:',style: TextStyle(fontWeight: FontWeight.bold),),
+                            Text('${widget.order.cart}'),
+
+                            Visibility(
+                                visible: (widget.order.comment.isNotEmpty)?true:false,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Divider(
+                                      height: 1,
+                                    ),
+                                    SizedBox(
+                                      height: 4,
+                                    ),
+                                    Text('NB:',style: TextStyle(fontWeight: FontWeight.bold),),
+                                    Text('${widget.order.comment}')
+                                  ],
+                                )
+                            )
                           ],
                         ),
                       )
-                  )
+                  ),
+
+                  SizedBox(
+                    height: 16,
+                  ),
+
+                  Card(
+                      shape: RoundedRectangleBorder( //<-- SEE HERE
+                        side: BorderSide(
+                          color: Colors.black,
+                        ),
+                      ),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child:  Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text('NOTEPAD:', style: TextStyle(fontWeight: FontWeight.bold),),
+                            ElevatedButton(onPressed: (){}, child: Text("Add Note", style: TextStyle(color: colorPrimary),))
+                          ],
+                        ),
+                      )
+                  ),
                 ],
               )
           )
